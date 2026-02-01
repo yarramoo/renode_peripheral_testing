@@ -84,7 +84,7 @@ namespace Antmicro.Renode.Peripherals.SPI
                     {
                         LogError($"WriteReg: address 0x{writeAddr:X2} out of range (max 0x{RegisterFileSize - 1:X2})");
                     }
-                    state = State.Idle;
+                    FinishTransmission();
                     return 0x0;
 
                 case State.ReadRegAddr:
@@ -104,6 +104,7 @@ namespace Antmicro.Renode.Peripherals.SPI
                         LogError($"ReadReg: address 0x{readAddr:X2} out of range");
                         response = 0xFF;
                     }
+                    FinishTransmission();
                     return response;
 
                 case State.Error:
