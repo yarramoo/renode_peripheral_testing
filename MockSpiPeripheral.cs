@@ -104,6 +104,7 @@ namespace Antmicro.Renode.Peripherals.SPI
                         LogError($"ReadReg: address 0x{readAddr:X2} out of range");
                         response = 0xFF;
                     }
+                    state = State.Idle;
                     return response;
 
                 case State.Error:

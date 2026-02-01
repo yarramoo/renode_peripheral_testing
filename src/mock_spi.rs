@@ -58,7 +58,7 @@ impl<SPI: SpiDevice> MockSpiDriver<SPI> {
             .transaction(&mut [Operation::Transfer(&mut rx, &[Command::ReadReg as u8, addr, 0x0])])
             .map_err(|_| Error::Spi)?;
 
-        Ok(rx[0])
+        Ok(rx[2])
     }
 }
 
