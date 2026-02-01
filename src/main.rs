@@ -1,25 +1,3 @@
-//! Bare-metal test harness for MockSpiDriver on STM32F4.
-//!
-//! This file is deliberately kept thin.  It contains only the entry point,
-//! a minimal UART writer (so you can see results in Renode's analyzer), and
-//! the test sequence.  The actual SPI peripheral setup is gated behind a
-//! feature flag so the same source works with different HAL crates.
-//!
-//! ## Building
-//!
-//! See README.md for the full flow.  The short version:
-//!
-//!   cargo +nightly build --target thumbv7em-none-eabihf --release \
-//!       --features stm32f4xx-hal
-//!
-//! ## What you'll see in Renode
-//!
-//! The UART2 analyzer will print lines like:
-//!
-//!   [PASS] write_reg / read_reg: wrote 0xAB, read back 0xAB
-//!   [PASS] echo: sent [11 22 33], got back [11 22 33]
-//!   All tests passed.
-
 #![no_std]
 #![no_main]
 
@@ -81,107 +59,8 @@ fn uart_print_hex_slice(slice: &[u8]) {
     uart_print("]");
 }
 
-// ---------------------------------------------------------------------------
-// Stub SPI implementation – used ONLY so that `cargo check` works on a
-// host machine (x86_64).  When you actually cross-compile with a real HAL,
-// you replace `get_spi_device()` with the HAL's type.
-//
-// For a quick smoke-test on host:
-//   cargo check                  # compiles the logic, no cross-compile needed
-// ---------------------------------------------------------------------------
-
-/// A dead-simple in-memory mock that implements SpiDevice<u8>.
-/// It just loops back TX → RX (no protocol logic).  Good enough to let the
-/// compiler verify types; real behaviour comes from Renode + the C# mock.
-mod host_stub {
-    use embedded_hal::spi::{ErrorKind, Operation, SpiDevice};
-
-    #[derive(Debug)]
-    pub struct StubError;
-
-    impl embedded_hal::spi::Error for StubError {
-        fn kind(&self) -> ErrorKind {
-            ErrorKind::Other
-        }
-    }
-
-    impl core::fmt::Display for StubError {
-        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-            write!(f, "stub")
-        }
-    }
-
-    pub struct StubSpiDevice;
-
-    impl embedded_hal::spi::ErrorType for StubSpiDevice {
-        type Error = StubError;
-    }
-
-    impl SpiDevice<u8> for StubSpiDevice {
-        fn transaction(
-            &mut self,
-            operations: &mut [Operation<'_, u8>],
-        ) -> Result<(), StubError> {
-            for op in operations.iter_mut() {
-                match op {
-                    Operation::Read(buf) => buf.iter_mut().for_each(|b| *b = 0xAB),
-                    Operation::Write(_) => {}
-                    Operation::Transfer(read, write) => {
-                        for (r, w) in read.iter_mut().zip(write.iter()) {
-                            *r = *w;
-                        }
-                    }
-                    Operation::TransferInPlace(buf) => {} // no-op
-                    Operation::DelayNs(_) => {}
-                }
-            }
-            Ok(())
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Cortex-M vector table
-//
-// The CPU does not use ENTRY() or any symbol lookup at reset.  It literally
-// reads two 32-bit words from address 0x0800_0000:
-//   [0]  initial value of SP
-//   [1]  address of the reset handler (with bit 0 set → Thumb mode)
-//
-// We place this array in the `.vector_table` input section so the linker
-// script puts it at the very start of flash.
-// ---------------------------------------------------------------------------
-
-/// Reset handler – the CPU jumps here after reading word 1 of the vector
-/// table.  All it does is call _start(); Renode's STM32 model already
-/// initialises SP from word 0 for us.
-
-
-
-// ---------------------------------------------------------------------------
-// Entry point
-// ---------------------------------------------------------------------------
-
 #[entry]
 fn main() -> ! {
-    // ---------------------------------------------------------------
-    // 1. Clock-enable peripherals via RCC
-    //    RCC base = 0x4002_1000 (STM32F407)
-    //    APB1ENR @ +0x40  – bit 17 = USART2
-    //    APB2ENR @ +0x44  – bit 0  = GPIOA, bit 12 = SPI1
-    // ---------------------------------------------------------------
-    // unsafe {
-    //     let rcc_apb1enr = 0x4002_1040u32 as *mut u32;
-    //     let rcc_apb2enr = 0x4002_1044u32 as *mut u32;
-
-    //     // Enable USART2 clock (APB1, bit 17)
-        // core::ptr::write_volatile(rcc_apb1enr,
-        //     core::ptr::read_volatile(rcc_apb1enr) | (1 << 17));
-
-    //     // Enable GPIOA + SPI1 clocks (APB2, bits 0 and 12)
-    //     core::ptr::write_volatile(rcc_apb2enr,
-    //         core::ptr::read_volatile(rcc_apb2enr) | (1 << 0) | (1 << 12));
-    // }
 
     // ---------------------------------------------------------------
     // 2. Configure USART2 (base 0x4000_4400)
@@ -190,11 +69,6 @@ fn main() -> ! {
     //      +0x04  DR   (data)
     //      +0x08  BRR  (baud-rate)
     //      +0x0C  CR1  (control 1)
-    //
-    //    Renode's STM32 USART model sets TXE as soon as TE is enabled,
-    //    regardless of baud-rate divider, so we just need a non-zero BRR
-    //    and TE + UE set.  BRR = 0x36 gives ~115 200 at 16 MHz APB1
-    //    (doesn't matter in simulation, but keeps it realistic).
     // ---------------------------------------------------------------
     unsafe {
         let usart2_brr = 0x4000_4408u32 as *mut u32;
