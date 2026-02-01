@@ -1,0 +1,6 @@
+using "platforms/boards/stm32f4_discovery-kit.repl"
+
+ccm: Memory.MappedMemory @ sysbus 0x10000000
+    size: 0x10000
+
+mock_spi: SPI.MockSpiPeripheral @ spi1

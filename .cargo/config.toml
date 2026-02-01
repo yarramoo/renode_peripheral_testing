@@ -1,0 +1,13 @@
+[target.thumbv7em-none-eabihf]
+# STM32F4 uses Cortex-M4F (ARMv7E-M with hardware FPU)
+runner = "arm-none-eabi-gdb"
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+]
+
+[build]
+# Default target for STM32F4 (Cortex-M4F with hardware floating point)
+target = "thumbv7em-none-eabihf"
+
+[env]
+DEFMT_LOG = "trace"
