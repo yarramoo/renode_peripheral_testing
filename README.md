@@ -11,13 +11,12 @@ Renode is a tool that lets you test software targeting your favourite microcontr
 (This is for mac)
 1. Download renode tool: https://github.com/renode/renode/releases/tag/v1.16.0
 2. Install mono .NET framework: `brew install mono`
+3. Build this repo `cargo build --release`
 
 # To run
-`cargo build --release`
-
-`mono <path_to_Renode.exe>`
+`mono <path_to_Renode.exe> --console run.resc` 
 - For me it's `mono /Applications/Renode.app/Contents/MacOS/bin/Renode.exe`
-- I set up a bash script called renode so you can just call `renode` from the cmd line
+- I made a bash script called `renode` so you can just call `renode` from the cmd line 
 
 ```
 #!/bin/bash
