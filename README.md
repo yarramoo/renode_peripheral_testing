@@ -7,13 +7,23 @@ Renode is a tool that lets you test software targeting your favourite microcontr
 - Compile targeting your MCU
 - Mock custom peripherals using C# modules (or python but they don't work as well)
 
-## Download
-https://github.com/renode/renode/releases/tag/v1.16.0
+## Setup
+(This is for mac)
+1. Download renode tool: https://github.com/renode/renode/releases/tag/v1.16.0
+2. Install mono .NET framework: `brew install mono`
 
 # To run
 `cargo build --release`
 
-`renode --console run.resc`
+`mono <path_to_Renode.exe>`
+- For me it's `mono /Applications/Renode.app/Contents/MacOS/bin/Renode.exe`
+- I set up a bash script called renode so you can just call `renode` from the cmd line
+
+```
+#!/bin/bash
+exec mono /Applications/Renode.app/Contents/MacOS/bin/Renode.exe "$@"
+```
+Then: `renode --console run.resc`
 
 ## Demo driver bug
 Check out the `demo-debugging-driver` branch. There is a driver bug. Try and find it 
