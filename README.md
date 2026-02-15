@@ -42,3 +42,5 @@ Check out the `demo-debugging-driver` branch. There is a driver bug. Try and fin
 
 `run.resc` - Script for renode to step through. Commands can also be interactively entered into the renode console
 
+## Todos 
+Currently this repo doesn't use the embedded_hal traits. That's why UART enabling is done via `write_volatile` and there's a custom implementation of `SPI` in `stm32_spi.rs`. For some reason there were some compatability issues. In theory there shouldn't be an issue so this just needs debugging. 
